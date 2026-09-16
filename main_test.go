@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestHandleHello(t *testing.T) {
+func TestHandleRoot(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	handleRoot(w, nil)
@@ -41,4 +41,23 @@ func TestHandleGoodbye(t *testing.T) {
 	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
 		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)
 	}
+}
+
+func TestHandleHelloParametized(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/hello?user=TestMan", nil)
+	w := httptest.NewRecorder()
+
+	handleHelloParameterized(w, req)
+
+	desiredCode := http.StatusOK
+	if w.Code != desiredCode {
+		t.Errorf("bad response code, expected %v but got %v\nbody: %s\n", desiredCode, w.Code, w.Body.String())
+	}
+
+	expectedMessage := []byte("Hello, Testman!\n")
+
+	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
+		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)
+	}
+
 }
