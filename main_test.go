@@ -54,7 +54,7 @@ func TestHandleHelloParametized(t *testing.T) {
 		t.Errorf("bad response code, expected %v but got %v\nbody: %s\n", desiredCode, w.Code, w.Body.String())
 	}
 
-	expectedMessage := []byte("Hello, Testman!\n")
+	expectedMessage := []byte("Hello, TestMan!\n")
 
 	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
 		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)

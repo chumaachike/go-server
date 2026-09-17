@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"log/slog"
 	"net/http"
@@ -8,9 +9,9 @@ import (
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleRoot)
+	mux.HandleFunc("/{$}", handleRoot)
 	mux.HandleFunc("/goodbye", handleGoodbye)
-	mux.HandleFunc("/hello/", handleHelloParameterized)
+	mux.HandleFunc("/hello", handleHelloParameterized)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -33,7 +34,23 @@ func handleGoodbye(w http.ResponseWriter, _ *http.Request) {
 	}
 }
 
-func handleHelloParameterized(w http.ResponseWriter, _ *http.Request) {
-	http.Error(w, "not implemented", http.StatusInternalServerError)
+func handleHelloParameterized(w http.ResponseWriter, r *http.Request) {
+	user := r.URL.Query().Get("user")
 
+	if user == "" {
+		http.Error(w, "Missing user parameter", http.StatusBadRequest)
+		return
+	}
+
+	var output bytes.Buffer
+
+	output.WriteString("Hello, ")
+	output.WriteString(user)
+	output.WriteString("!\n")
+
+	_, err := w.Write(output.Bytes())
+
+	if err != nil {
+		slog.Error("error writing response body", "err", err)
+	}
 }
