@@ -10,8 +10,9 @@ import (
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{$}", handleRoot)
-	mux.HandleFunc("/goodbye", handleGoodbye)
-	mux.HandleFunc("/hello", handleHelloParameterized)
+	mux.HandleFunc("/goodbye/", handleGoodbye)
+	mux.HandleFunc("/hello/", handleHelloParameterized)
+	mux.HandleFunc("/user/hello/", handleHelloHeader)
 
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
@@ -50,6 +51,23 @@ func handleHelloParameterized(w http.ResponseWriter, r *http.Request) {
 
 	_, err := w.Write(output.Bytes())
 
+	if err != nil {
+		slog.Error("error writing response body", "err", err)
+	}
+}
+
+func handleHelloHeader(w http.ResponseWriter, r *http.Request) {
+	user := r.Header.Get("User")
+	if user == "" {
+		http.Error(w, "No header value given", http.StatusBadRequest)
+		return
+	}
+	var output bytes.Buffer
+	output.WriteString("Hello, ")
+	output.WriteString(user)
+	output.WriteString("!\n")
+
+	_, err := w.Write(output.Bytes())
 	if err != nil {
 		slog.Error("error writing response body", "err", err)
 	}

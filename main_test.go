@@ -124,3 +124,59 @@ func TestHandleHelloParametized(t *testing.T) {
 	}
 
 }
+
+func TestHandleHelloHeader(t *testing.T) {
+	tests := []struct {
+		name           string
+		headValue      string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "valid username header",
+			headValue:      "chuma",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "Hello, chuma!\n",
+		},
+		{
+			name:           "Missing username header",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "No header value given\n",
+		},
+		{
+			name:           "Username with spaces",
+			headValue:      "Chuma Achike",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "Hello, Chuma Achike!\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/user/", nil)
+			if tt.headValue != "" {
+				req.Header.Set("User", tt.headValue)
+			}
+
+			w := httptest.NewRecorder()
+
+			handleHelloHeader(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf(
+					"expected status %d got %d",
+					tt.expectedStatus,
+					w.Code,
+				)
+			}
+			if w.Body.String() != tt.expectedBody {
+				t.Errorf(
+					"expected body %q, got %q",
+					tt.expectedBody,
+					w.Body.String(),
+				)
+			}
+		})
+	}
+
+}
