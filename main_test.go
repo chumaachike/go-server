@@ -1,63 +1,126 @@
 package main
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-func TestHandleRoot(t *testing.T) {
-	w := httptest.NewRecorder()
+func TestRoutes(t *testing.T) {
+	mux := http.NewServeMux()
 
-	handleRoot(w, nil)
+	mux.HandleFunc("/{$}", handleRoot)
+	mux.HandleFunc("/goodbye", handleGoodbye)
 
-	desiredCode := http.StatusOK
-
-	if w.Code != desiredCode {
-		t.Errorf("bad response code, expected %v but got %v\nbody: %s\n", desiredCode, w.Code, w.Body.String())
+	tests := []struct {
+		name         string
+		path         string
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "Homepage",
+			path:         "/",
+			expectedCode: http.StatusOK,
+			expectedBody: "Welcome to he Homepage!\n",
+		},
+		{
+			name:         "Goodbye",
+			path:         "/goodbye",
+			expectedCode: http.StatusOK,
+			expectedBody: "Goodbye!\n",
+		},
+		{
+			name:         "Unknown route",
+			path:         "/unknown",
+			expectedCode: http.StatusNotFound,
+			expectedBody: "404 page not found\n",
+		},
 	}
 
-	expectedMessage := []byte("Welcome to he Homepage!\n")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
-		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)
-	}
-}
+			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			w := httptest.NewRecorder()
 
-func TestHandleGoodbye(t *testing.T) {
-	w := httptest.NewRecorder()
+			mux.ServeHTTP(w, req)
 
-	handleGoodbye(w, nil)
+			if w.Code != tt.expectedCode {
+				t.Errorf(
+					"expected status %d, got %d",
+					tt.expectedCode,
+					w.Code,
+				)
+			}
 
-	desiredCode := http.StatusOK
-
-	if w.Code != desiredCode {
-		t.Errorf("bad response code, expected %v but got %v\nbody: %s\n", desiredCode, w.Code, w.Body.String())
-	}
-
-	expectedMessage := []byte("Goodbye!\n")
-
-	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
-		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)
+			if w.Body.String() != tt.expectedBody {
+				t.Errorf(
+					"expected body %q, got %q",
+					tt.expectedBody,
+					w.Body.String(),
+				)
+			}
+		})
 	}
 }
 
 func TestHandleHelloParametized(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/hello?user=TestMan", nil)
-	w := httptest.NewRecorder()
-
-	handleHelloParameterized(w, req)
-
-	desiredCode := http.StatusOK
-	if w.Code != desiredCode {
-		t.Errorf("bad response code, expected %v but got %v\nbody: %s\n", desiredCode, w.Code, w.Body.String())
+	tests := []struct {
+		name           string
+		url            string
+		expectedStatus int
+		expectedBody   string
+	}{
+		{
+			name:           "valid user",
+			url:            "/hello?user=TestMan",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "Hello, TestMan!\n",
+		},
+		{
+			name:           "Another user",
+			url:            "/hello?user=Chuma",
+			expectedStatus: http.StatusOK,
+			expectedBody:   "Hello, Chuma!\n",
+		},
+		{
+			name:           "Missing user",
+			url:            "/hello",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "Missing user parameter\n",
+		},
+		{
+			name:           "Empty user",
+			url:            "/hello?user=",
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   "Missing user parameter\n",
+		},
 	}
 
-	expectedMessage := []byte("Hello, TestMan!\n")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
 
-	if !bytes.Equal(expectedMessage, w.Body.Bytes()) {
-		t.Errorf("bad return, go: %q, expected %q", w.Body.String(), expectedMessage)
+			handleHelloParameterized(w, req)
+
+			if w.Code != tt.expectedStatus {
+				t.Errorf(
+					"expected status %d got %d",
+					tt.expectedStatus,
+					w.Code,
+				)
+			}
+
+			if w.Body.String() != tt.expectedBody {
+				t.Errorf(
+					"expected body %q, got %q",
+					tt.expectedBody,
+					w.Body.String(),
+				)
+			}
+		})
 	}
 
 }
